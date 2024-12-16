@@ -1,6 +1,7 @@
 import argparse
 import functions as fc
 import crawl as cr
+
 import parse as ps
 import os
 import notion as nt
@@ -15,7 +16,9 @@ def main():
     href_list=[]
 
     all_data = []
+
     batch_size = 20  # 한 번에 저장할 데이터 개수
+
     batch_index = 0  # 저장 배치 인덱스
     print(f"Output directory set to: {output_dir}") 
     fc.ensure_directory(output_dir)  # 디렉토리 생성
@@ -36,7 +39,6 @@ def main():
             fc.save_to_json(all_data, batch_index, output_dir)
             all_data = []  # 저장 후 리스트 초기화
         
-
         if i==batch_size-1: # 간단하게 돌려볼 때
             break
     
