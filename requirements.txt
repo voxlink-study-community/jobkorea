@@ -1,0 +1,6 @@
+selenium
+#google-chrome wget-install
+requests
+beautifulsoup4
+notion_client
+dotenv
