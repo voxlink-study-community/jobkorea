@@ -1,7 +1,10 @@
 import argparse
 import functions as fc
 import crawl as cr
+<<<<<<< HEAD
+=======
 
+>>>>>>> main
 import parse as ps
 import os
 import notion as nt
@@ -16,6 +19,7 @@ def main():
     href_list=[]
 
     all_data = []
+
 
     batch_size = 20  # 한 번에 저장할 데이터 개수
 
@@ -39,6 +43,7 @@ def main():
             fc.save_to_json(all_data, batch_index, output_dir)
             all_data = []  # 저장 후 리스트 초기화
         
+
         if i==batch_size-1: # 간단하게 돌려볼 때
             break
     
