@@ -3,4 +3,5 @@ selenium
 requests
 beautifulsoup4
 notion_client
-dotenv
+python-dotenv
+selenium-stealth
