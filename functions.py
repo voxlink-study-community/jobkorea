@@ -10,6 +10,8 @@ def save_to_json(data, batch_index, output_dir):
         json.dump(data, f, ensure_ascii=False, indent=4)
     print(f"  <save point> JSON 파일 저장 완료: {output_path}")
 
+    return output_path
+
 # 작업 디렉토리 생성 함수
 def ensure_directory(directory):
     """Ensures that the specified directory exists. Creates it if it doesn't."""

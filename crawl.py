@@ -1,5 +1,5 @@
-
 from selenium import webdriver
+from selenium_stealth import stealth
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -10,20 +10,35 @@ import time
 import json
 import os
 import functions as fc
+import random
 
 
-# Output Directory 설정
-output_dir = "output/test"  # 작업 디렉토리 이름
 # Chrome 옵션 설정
 options = webdriver.ChromeOptions()
 options.add_argument('--no-sandbox')  # WSL 환경에서 필수
 #options.add_argument('--disable-dev-shm-usage')  # 공유 메모리 비활성화
 #options.add_argument('--headless')  # GUI가 필요 없는 경우W
-#options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.199 Safari/537.36") #ip막힐 시 proxy 활용
+
+#jobkorea 보안코드 대비
+options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.199 Safari/537.36") #ip막힐 시 proxy 활용
+options.add_argument("--disable-blink-features=AutomationControlled")
+options.add_argument("--disable-infobars")
+options.add_experimental_option("excludeSwitches", ["enable-automation"])
+options.add_experimental_option("useAutomationExtension", False)
+
 # ChromeDriver 경로 설정
 service = Service('/usr/local/bin/chromedriver')
 # WebDriver 실행 service=service,
 driver = webdriver.Chrome( options=options)
+
+stealth(driver, #chrome://gpu/에서 GPU정보 확인 가능
+        languages=["en-US", "en"],  # 필요에 따라 "ko-KR", "ko"로 변경 가능
+        vendor="Google Inc.",  # GPU 정보에서 확인한 벤더
+        platform="Linux x86_64",  # 현재 운영 체제
+        webgl_vendor="Google Inc. (Microsoft Corporation)",  # GPU 정보에서 확인한 값
+        renderer="ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce GTX 1060 3GB), OpenGL 4.2 (Core Profile) Mesa 23.2.1-1ubuntu3.1~22.04.2)",  # 정확한 렌더러 정보
+        fix_hairline=False  # 픽셀 보정 비활성화
+)
 
 def crawl_quit():
     driver.quit()
@@ -86,12 +101,27 @@ def crawl_href(max_pages):
     pagination_id = "dvGIPaging"
 
     # 최대 페이지 개수를 설정 (필요에 따라 동적으로 계산)
-    max_pages = 17  # 예시로 5페이지만 처리
+    max_pages = 17  # 17페이지로 설정(현재까지 모든 경우가 17페이지가 끝)
 
     for j in range(max_pages):
         print('='*30)
         print(f'현재 페이지: {j+1}')
-        if j+1 > 1:
+       
+        # 현재 페이지에서 href 값을 수집
+        a_elements = driver.find_elements(By.XPATH, "//div[@id='dev-gi-list']//tr//td[@class='tplTit']//a[@href]")
+        for i, a_element in enumerate(a_elements):
+            href = a_element.get_attribute("href")
+            href_list.append(href)
+            print(f"추출된 href ({i+1}/{len(a_elements)}): {href}")
+
+        if j==0:
+            next_page_element = WebDriverWait(driver, 10).until(
+                            EC.element_to_be_clickable((By.XPATH, f"//div[@id='{pagination_id}']//a[@data-page='{j+2}']"))
+                        )
+            next_page_element.click()
+            time.sleep(2)  # 페이지가 로드되도록 대기
+        
+        if j > 0:
             try:
                 if (j + 1) % 10 != 0:
                     # data-page의 값이 j+2인 요소를 클릭
@@ -108,17 +138,8 @@ def crawl_href(max_pages):
                     )
                     next_group_button.click()
                     print(f"다음 그룹으로 이동 (페이지 {j+2})")
-                    
             except TimeoutException:
                 print(f"페이지 {j+2}를 찾을 수 없습니다(현재 마지막 페이지입니다.)")
-                
-
-        # 현재 페이지에서 href 값을 수집
-        a_elements = driver.find_elements(By.XPATH, "//div[@id='dev-gi-list']//tr//td[@class='tplTit']//a[@href]")
-        for i, a_element in enumerate(a_elements):
-            href = a_element.get_attribute("href")
-            href_list.append(href)
-            print(f"추출된 href ({i+1}/{len(a_elements)}): {href}")
 
     print(f"총 {len(href_list)}개의 href가 추출되었습니다.")
     
@@ -127,13 +148,6 @@ def crawl_href(max_pages):
 
 def crawl_pages(i, url):
     
-    # 데이터 수집
-    all_text_data = []
-    all_table_data = []
-    all_data = []
-    batch_size = 40  # 한 번에 저장할 데이터 개수
-    batch_index = 0  # 저장 배치 인덱스
-
     # for문
     # iframe에 접근
     driver.get(url)
@@ -195,7 +209,7 @@ def crawl_pages(i, url):
 
     # iframe에서 메인 페이지로 돌아오기
     driver.switch_to.default_content()
-    time.sleep(1)
+    time.sleep(random.uniform(0.5, 1.5))  
 
     # class='tbCol tbCoInfo'의 dl 태그 데이터 추출
     company_info = []
