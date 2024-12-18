@@ -1,6 +1,10 @@
 import argparse
 import functions as fc
 import crawl as cr
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
 import parse as ps
 import os
 import notion as nt
@@ -15,7 +19,10 @@ def main():
     href_list=[]
 
     all_data = []
+
+
     batch_size = 20  # 한 번에 저장할 데이터 개수
+
     batch_index = 0  # 저장 배치 인덱스
     print(f"Output directory set to: {output_dir}") 
     fc.ensure_directory(output_dir)  # 디렉토리 생성
