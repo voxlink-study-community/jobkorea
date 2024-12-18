@@ -16,8 +16,8 @@ def main():
 
     all_data = []
 
-
     batch_size = 40  # 한 번에 저장할 데이터 개수
+
 
     batch_index = 0  # 저장 배치 인덱스
     print(f"Output directory set to: {output_dir}") 
@@ -46,12 +46,13 @@ def main():
             
 
             all_data = []  # 저장 후 리스트 초기화
+
             count_sum+=count_in_this_batch
             print(f'<Database> 현재까지{count_sum}행이 notion에 삽입되었습니다')
 
         # if i==batch_size-1: # 간단하게 돌려볼 때
         #     break
-    
+
     
     # 후가공
     # processed_files=[]
