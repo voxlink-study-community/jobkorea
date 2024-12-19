@@ -1,7 +1,0 @@
-selenium
-#google-chrome wget-install
-requests
-beautifulsoup4
-notion_client
-python-dotenv
-selenium-stealth
