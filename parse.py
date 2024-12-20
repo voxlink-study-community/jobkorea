@@ -159,6 +159,14 @@ def process_raw_data(output_dir, raw_data):
     else:
         industries = ["N/A"]
 
+    # 사원수
+    raw_members= first_info.get("사원수", 0)
+    if raw_members != 0:
+         # "명" 제거 및 숫자로 변환
+        members = int(raw_members.replace("명", "").replace(",", "").strip()) 
+    else:
+        members = 0
+
     processed_item = {
         "raw_data": raw_data,
         "기업명": titles,
@@ -170,9 +178,9 @@ def process_raw_data(output_dir, raw_data):
         "근무지": locations,
         "고용형태": first_info.get("고용형태", "N/A"),
         "경력": first_info.get("경력", "N/A"),
-        "기업규모": 0,  # 추가 정보가 필요할 경우 추출 로직 작성
+        #"기업규모": 0,  # 추가 정보가 필요할 경우 추출 로직 작성
         "stack": [],  # 기술 스택은 별도 처리 필요
-        "기업규모(종업원수)": 0,
+        "기업규모(종업원수)": members,
         "URL": raw_data.get("url", "N/A"),
         "복리후생": [],  # 복리후생은 별도 처리 필요
     }
