@@ -7,3 +7,4 @@ python-dotenv
 selenium-stealth
 opencv-python
 google-cloud-vision
+

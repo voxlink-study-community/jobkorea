@@ -19,6 +19,7 @@ def main():
 
     all_data = []
 
+
     def get_proxy_list():
         response = requests.get(
             "https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=5000&country=all"
@@ -30,6 +31,7 @@ def main():
 
 
     batch_size = 40  # 한 번에 저장할 데이터 개수
+
 
     batch_index = 0  # 저장 배치 인덱스
     print(f"Output directory set to: {output_dir}") 
@@ -45,6 +47,7 @@ def main():
     
         print('=' * 20)
         print(f"접속 중: {url} ({i+1}/{len(href_list)})")
+
 
         # 페이지별 실행 시간 측정 시작
         page_start_time = time.time()
@@ -63,6 +66,13 @@ def main():
         processed_item=ps.process_raw_data(output_dir, page_data)
         all_data.append(processed_item)
 
+
+        page_data=cr.crawl_pages(i, url)
+        processed_item=ps.process_raw_data(output_dir, page_data)
+        all_data.append(processed_item)
+
+
+       
         # batch_size개씩 데이터를 저장
         if (i + 1) % batch_size == 0 or (i + 1) == len(href_list):
             batch_index += 1
@@ -77,6 +87,7 @@ def main():
 
         # if i==batch_size-1: # 간단하게 돌려볼 때
         #     break
+
 
     # 전체 실행 시간 측정 종료
     overall_end_time = time.time()

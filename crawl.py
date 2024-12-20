@@ -33,6 +33,7 @@ if credentials_path:
     print(f"Using credentials from: {credentials_path}")
 
 
+
 # Chrome 옵션 설정
 options = webdriver.ChromeOptions()
 options.add_argument('--no-sandbox')  # WSL 환경에서 필수
@@ -52,13 +53,16 @@ service = Service('/usr/local/bin/chromedriver')
 driver = webdriver.Chrome( options=options)
 
 stealth(driver, #chrome://gpu/에서 GPU정보 확인 가능
+
         languages=["ko-KR", "ko"],  # "en-US", "en"->필요에 따라 "ko-KR", "ko"로 변경 가능
+
         vendor="Google Inc.",  # GPU 정보에서 확인한 벤더
         platform="Linux x86_64",  # 현재 운영 체제
         webgl_vendor="Google Inc. (Microsoft Corporation)",  # GPU 정보에서 확인한 값
         renderer="ANGLE (Microsoft Corporation, D3D12 (NVIDIA GeForce GTX 1060 3GB), OpenGL 4.2 (Core Profile) Mesa 23.2.1-1ubuntu3.1~22.04.2)",  # 정확한 렌더러 정보
         fix_hairline=False  # 픽셀 보정 비활성화
 )
+
 
 url=""
 i=0
@@ -293,7 +297,7 @@ def crawl_href(max_pages, retry_count=0, max_retries=3):
     for j in range(max_pages):
         print('='*30)
         print(f'현재 페이지: {j+1}')
-    
+
         # 현재 페이지에서 href 값을 수집
         a_elements = driver.find_elements(By.XPATH, "//div[@id='dev-gi-list']//tr//td[@class='tplTit']//a[@href]")
         for i, a_element in enumerate(a_elements):
@@ -332,6 +336,7 @@ def crawl_href(max_pages, retry_count=0, max_retries=3):
     
 
     return href_list
+
 #보안페이지 대비
     # except TimeoutException:
     #     print("보안 페이지인 경우 보안코드 입력 페이지로 이동하는 버튼을 누릅니다.")
@@ -351,6 +356,11 @@ def crawl_pages(i, url, retry_count=0, max_retries=3):
     if retry_count > max_retries:
         print(f"최대 재시도 횟수를 초과했습니다. URL {url} 처리 불가.")
         return None
+
+
+def crawl_pages(i, url):
+    
+
     # for문
     # iframe에 접근
     try:
@@ -396,6 +406,66 @@ def crawl_pages(i, url, retry_count=0, max_retries=3):
             except TimeoutException:
                 print("페이지에 테이블이 없습니다.")
                 # 이미지 데이터 처리 vision API
+            article_text = article_element.text.strip()
+            print("article 태그 내용 추출 성공")
+        except TimeoutException:
+            print("해당 클래스명을 가진 article 태그를 찾을 수 없습니다.")
+
+
+    # iframe에서 메인 페이지로 돌아오기
+    driver.switch_to.default_content()
+    time.sleep(random.uniform(0.5, 1.5))  
+
+    # class='tbCol tbCoInfo'의 dl 태그 데이터 추출
+    company_info = []
+    try:
+        cname_element = driver.find_element(By.ID, "hdnBrazeEventProperties")
+        cname_value = cname_element.get_attribute("value")
+        if cname_value.split('|')[0]=="":
+            cname = cname_value.split('|')[1]
+        else:
+            cname = cname_value.split('|')[0]
+    except (IndexError, AttributeError):
+        cname = "N/A"
+        print('기업명 추출불가')
+
+    info_dict = {"기업명": cname}
+
+    try:
+        info_div = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, 'tbCol.tbCoInfo'))
+        )
+        dl_elements = info_div.find_elements(By.TAG_NAME, 'dl')
+        for dl in dl_elements:
+            dt = dl.find_element(By.TAG_NAME, 'dt').text.strip()
+            dd = dl.find_element(By.TAG_NAME, 'dd').text.strip()
+            info_dict[f"{dt}"] = dd  # dict에 데이터 추가
+    except TimeoutException:
+        try:
+            recruit_data_div = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, 'recruit-data'))
+        )
+            dl_elements = recruit_data_div.find_elements(By.TAG_NAME, 'dl')
+            for dl in dl_elements:
+                dt = dl.find_element(By.TAG_NAME, 'dt').text.strip()
+                dd = dl.find_element(By.TAG_NAME, 'dd').text.strip()
+                info_dict[f"{dt}"] = dd  # dict에 데이터 추가
+        except:
+            print("company_info 데이터를 추출할 수 없습니다.")
+    company_info.append(info_dict)
+    
+    # 수집된 데이터를 딕셔너리로 저장
+    page_data = {
+        "title": driver.title,
+        "url": url,
+        "article_text": article_text,
+        "tables": extracted_table_data,
+        "company_info": company_info
+    }
+
+    return page_data
+    
+
 
         except TimeoutException: #gib_frame으로 다루지 않음, article 안에 정보가 있는 경우
             print("id='gib_frame'인 iframe이 존재하지 않습니다. 메인 페이지에서 데이터 추출 시도.")
