@@ -61,7 +61,6 @@ def extract_requirements_from_table(tables):
                     preferred_qualifications.append(row_dict["우대사항"])
 
     # 중복 제거 및 정리
-    # 중복 제거 및 정리
     job_requirements = list(set(filter(None, job_requirements)))  # 빈 문자열 제거
     preferred_qualifications = list(set(filter(None, preferred_qualifications)))
 
@@ -129,6 +128,13 @@ def process_raw_data(output_dir, input_file):
         job_requirements = truncate_text(job_requirements)
         preferred_qualifications = truncate_text(preferred_qualifications)
 
+        # title에서 comma를 대체
+        raw_title = first_info.get("기업명", "N/A")
+        if raw_title != "N/A":
+            titles = [title.replace(",", "-") for title in raw_title.split(",")]
+            title_result = ",".join(titles)
+        else:
+            title_result = "N/A"
         # 근무지에서 comma를 대체
         raw_locations = first_info.get("근무지역", "N/A")
         if raw_locations != "N/A":
@@ -144,7 +150,7 @@ def process_raw_data(output_dir, input_file):
             industries = ["N/A"]
 
         processed_item = {
-            "기업명": first_info.get("기업명", "N/A"),
+            "기업명": title_result,
             "유형": industries,
             "직함": [first_info.get("직무", "N/A")],
             "도메인(분야)": [item.get("title", "").split("-")[0].strip()],
