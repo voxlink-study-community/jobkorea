@@ -14,13 +14,13 @@ print(f"DATABASE_ID:{database_id}")
 
 
 
-def upload_to_notion(data_path, count):
+def upload_to_notion(data_path, batch_size):
     # Notion API 클라이언트 초기화
     notion = Client(auth=notion_api)
     
     # .env 파일 로드
     
-
+    count=0
     with open(data_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
@@ -78,7 +78,9 @@ def upload_to_notion(data_path, count):
             properties=properties
         )
         count+=1
-        print(f'<Database> 현재까지{count}행이 notion에 삽입되었습니다')
+        print(f'<Database> 1개 행이 notion에 삽입되었습니다--{count}/{batch_size}')
+        
+    return count
 
 # Example JSON data
 sample_data = [

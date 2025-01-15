@@ -61,6 +61,7 @@ def extract_requirements_from_table(tables):
                     preferred_qualifications.append(row_dict["우대사항"])
 
     # 중복 제거 및 정리
+    # 중복 제거 및 정리
     job_requirements = list(set(filter(None, job_requirements)))  # 빈 문자열 제거
     preferred_qualifications = list(set(filter(None, preferred_qualifications)))
 
@@ -101,86 +102,104 @@ def extract_sections(article_text):
 
 
 
-def process_raw_data(output_dir, input_file):
+def process_raw_data(output_dir, raw_data):
     job_requirements="N/A"
     preferred_qualifications="N/A"
     # 입력 JSON 로드
-    with open(input_file, "r", encoding="utf-8") as f:
-        raw_data = json.load(f)
+    # with open(input_file, "r", encoding="utf-8") as f:
+    #     raw_data = json.load(f)
 
     processed_data = []
 
     # 데이터 처리
-    for item in raw_data:
-        company_info = item.get("company_info", [{}])
-        first_info = company_info[0] if company_info else {}
-
-        # article_text에서 직무요건과 우대사항 추출
-        article_text = item.get("article_text", "N/A")
-        if article_text!="N/A":
-            job_requirements, preferred_qualifications = extract_sections(article_text)
-        else:
-            # 테이블 데이터에서 추출
-            tables = item.get("tables", [])
-            if tables !=[]:
-                job_requirements, preferred_qualifications = extract_requirements_from_table(tables)
-
-        job_requirements = truncate_text(job_requirements)
-        preferred_qualifications = truncate_text(preferred_qualifications)
-
-        # title에서 comma를 대체
-        raw_title = first_info.get("기업명", "N/A")
-        if raw_title != "N/A":
-            titles = [title.replace(",", "-") for title in raw_title.split(",")]
-            title_result = ",".join(titles)
-        else:
-            title_result = "N/A"
-        # 근무지에서 comma를 대체
-        raw_locations = first_info.get("근무지역", "N/A")
-        if raw_locations != "N/A":
-            locations = [location.replace(",", "-") for location in raw_locations.split(",")]
-        else:
-            locations = ["N/A"]
-
-        # 산업(업종) 필드 처리: '·'를 기준으로 나누기
-        raw_industry = first_info.get("산업(업종)", "N/A")
-        if raw_industry != "N/A":
-            industries = [industry.strip() for industry in raw_industry.split("·")]
-        else:
-            industries = ["N/A"]
-
-        processed_item = {
-            "기업명": title_result,
-            "유형": industries,
-            "직함": [first_info.get("직무", "N/A")],
-            "도메인(분야)": [item.get("title", "").split("-")[0].strip()],
-            "지원 자격(요구)": job_requirements,
-            "우대사항": preferred_qualifications,
-            "근무지": locations,
-            "고용형태": first_info.get("고용형태", "N/A"),
-            "경력": first_info.get("경력", "N/A"),
-            "기업규모": 0,  # 추가 정보가 필요할 경우 추출 로직 작성
-            "stack": [],  # 기술 스택은 별도 처리 필요
-            "기업규모(종업원수)": 0,
-            "URL": item.get("url", "N/A"),
-            "복리후생": [],  # 복리후생은 별도 처리 필요
-        }
-
-        processed_data.append(processed_item)
     
-    # 출력 파일 경로
-    processed_dir = os.path.join('processed_output',output_dir)
-    os.makedirs(processed_dir, exist_ok=True)  # 디렉토리 생성 (없으면 생성)
+    company_info = raw_data.get("company_info", [{}])
+    first_info = company_info[0] if company_info else {}
 
-    # 입력 파일에서 파일명 추출
-    _, file_with_ext = os.path.split(input_file)
-    file_name, _ = os.path.splitext(file_with_ext)
+    # article_text에서 직무요건과 우대사항 추출
+    article_text = raw_data.get("article_text", "N/A")
+    if article_text!="N/A":
+        job_requirements, preferred_qualifications = extract_sections(article_text)
+    else:
+        # 테이블 데이터에서 추출
+        tables = raw_data.get("tables", [])
+        if tables !=[]:
+            job_requirements, preferred_qualifications = extract_requirements_from_table(tables)
 
-    # 출력 파일명 생성
-    processed_output_file = os.path.join(processed_dir, f"{file_name}_processed.json")
-    with open(processed_output_file, "w", encoding="utf-8") as f:
-        json.dump(processed_data, f, ensure_ascii=False, indent=4)
-    print(f"Processed data saved to {processed_output_file}")
+    job_requirements = truncate_text(job_requirements)
+    preferred_qualifications = truncate_text(preferred_qualifications)
+
+
+    # title에서 comma를 대체
+    raw_titles = first_info.get("기업명", "N/A")
+    if raw_titles != "N/A":
+        titles = raw_titles.replace(",", "/") 
+    else:
+        titles = "N/A"
+
+    # 근무지에서 comma를 대체
+    raw_locations = first_info.get("근무지역", "N/A")
+    if raw_locations != "N/A":
+        locations = [location.replace(",", "-") for location in raw_locations.split(",")]
+    else:
+        locations = ["N/A"]
+
+    # 도메인에서 comma를 대체
+    raw_domains = raw_data.get("title", "")
+    if raw_domains != "N/A":
+        domains = [domain.replace(",", "/") for domain in raw_domains.split(",")]
+    else:
+        domains = ["N/A"]
+
+    # 산업(업종) 필드 처리: '·'를 기준으로 나누기
+    raw_industry = first_info.get("산업(업종)", "N/A")
+    if raw_industry != "N/A":
+        # 정규식을 사용해 '·', ',', ' ' 등 여러 구분자로 나누기
+        industries = [industry.strip() for industry in re.split(r"[·,;|/]", raw_industry) if industry.strip()]
+    else:
+        industries = ["N/A"]
+
+    # 사원수
+    raw_members= first_info.get("사원수", 0)
+    if raw_members != 0:
+         # "명" 제거 및 숫자로 변환
+        members = int(raw_members.replace("명", "").replace(",", "").strip()) 
+    else:
+        members = 0
+
+    processed_item = {
+        "raw_data": raw_data,
+        "기업명": titles,
+        "유형": industries,
+        "직함": [first_info.get("직무", "N/A")],
+        "도메인(분야)": domains,
+        "지원 자격(요구)": job_requirements,
+        "우대사항": preferred_qualifications,
+        "근무지": locations,
+        "고용형태": first_info.get("고용형태", "N/A"),
+        "경력": first_info.get("경력", "N/A"),
+        #"기업규모": 0,  # 추가 정보가 필요할 경우 추출 로직 작성
+        "stack": [],  # 기술 스택은 별도 처리 필요
+        "기업규모(종업원수)": members,
+        "URL": raw_data.get("url", "N/A"),
+        "복리후생": [],  # 복리후생은 별도 처리 필요
+    }
+
     
-    return processed_output_file
+    
+    # # 출력 파일 경로
+    # processed_dir = os.path.join('processed_output',output_dir)
+    # os.makedirs(processed_dir, exist_ok=True)  # 디렉토리 생성 (없으면 생성)
+
+    # # 입력 파일에서 파일명 추출
+    # _, file_with_ext = os.path.split(input_file)
+    # file_name, _ = os.path.splitext(file_with_ext)
+
+    # # 출력 파일명 생성
+    # processed_output_file = os.path.join(processed_dir, f"{file_name}_processed.json")
+    # with open(processed_output_file, "w", encoding="utf-8") as f:
+    #     json.dump(processed_data, f, ensure_ascii=False, indent=4)
+    # print(f"Processed data saved to {processed_output_file}")
+    
+    return processed_item
 
